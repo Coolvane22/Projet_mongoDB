@@ -1,0 +1,17 @@
+---
+title: "Projet MongoDB"
+author: "GOUTARD Amélie & THIVEND Evane"
+date: '2022-04-07'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+
+```
+
