@@ -14,9 +14,10 @@ import datetime
 import statistics
 
 
-
+# Ouverture du fichier avec identifiant de connexion
 with open('identifiant.txt') as f:
     id = f.readlines()
+
 ### Connexion BDD
 db_uri = id
 client = MongoClient(db_uri)
@@ -24,23 +25,20 @@ client = MongoClient(db_uri)
 # Acces bdd doctolib
 db = client["doctolib"]
 
-#print(db.list_collection_names())
-
 # On se place dans la collection dump_Jan_2022
 coll = db["dump_Jan2022"]
 
 
 # Recuperation des centres de vaccination situees à moins de 50 km de Rennes:
 Rennes  = {'type': 'Point', 'coordinates' :[-1.68002 , 48.111339]}
-# On décide de ne garder que l'id, et les coordonées
+
+# On décide de ne garder que le nom  et les coordonnées
 filter_loc = {"location": {'$near': {'$geometry': Rennes, '$maxDistance': 50000}}}
 filter_att = {"name": 1, "location.coordinates" : 1} 
 cursor_centre_50 = coll.find(filter_loc,filter_att)
-#print(len(list(cursor_centre_50)))
 
 
 #Creation de la liste des noms des centres de vaccinations et des coordonnees
-
 liste_nom = []
 liste_lon = [] 
 liste_lat = [] 
@@ -77,7 +75,6 @@ for rep in cursor_moyenne:
 #On décide donc d'utiliser la médiane pour la valeur de seuil
 #L'opérateur médiane n'existe pas dans les opérateurs d'aggregation en mongoDB
 
-
 liste_nom_ouvert = []
 liste_creneau = []
 for rep in cursor_creneaux:    
@@ -88,30 +85,39 @@ for rep in cursor_creneaux:
         if k == 'nb':
             liste_creneau.append(v)
 mediane = statistics.median(liste_creneau)
+print(liste_creneau)
 
 # # #Creation dun dataset pour l'utilisation des cartes Bokeh
-dico_creneau = {}
-for nom in liste_nom_ouvert:
-    for creneau in liste_creneau:
-        if nom not in dico_creneau.keys():
-            dico_creneau[nom]= creneau
+keys_list = liste_nom_ouvert
+values_list = liste_creneau
+zip_iterator = zip(keys_list, values_list)
+dico_creneau = dict(zip_iterator)
 
 dico_creneau_tot = {}
 for nom in liste_nom:
     if nom in dico_creneau.keys():
         dico_creneau_tot[nom] = dico_creneau[nom]
     else:
-        dico_creneau_tot[nom] = "Pas de créneau disponible"
+        dico_creneau_tot[nom] = 0
+
+color = []
+for v in dico_creneau_tot.values():
+    if int(v) == 0:
+        color.append('red')
+    elif  int(v) > mediane:
+        color.append('green')
+    else:
+        color.append('orange')
+
 
 dico = {
     'Nom': liste_nom,
     'Longitude' : liste_lon,
     'Latitude' : liste_lat,
-    'Creneau' : dico_creneau_tot.values()
-    
+    'Creneau' : dico_creneau_tot.values() ,
+    'Color' : color
 }
 data = pd.DataFrame(dico)
-
 
 # Création de l'output HTML
 output_file("Projet_MongoDB_Python.html")
@@ -149,6 +155,7 @@ c = figure(
 c.add_tile(tile_provider)
 
 #Ajout point 
-c.scatter(x='Longitude', y='Latitude', size=12, alpha=0.5, source=data_source,  
+
+c.scatter(x='Longitude', y='Latitude', size=12, alpha=0.5, source=data_source,  color = 'Color'
                 )
 show(c)
