@@ -31,8 +31,6 @@ mdb = mongo(
 # Récupération des données nécessaires pour la visualisation  
 Votre requête MongoDB devra récupérer pour chacun de ces auteurs la liste de ses publications (la suite du traitement qui consiste à calculer le nombre d’articles commun par paire d’auteurs pourra être réalisée dans votre script).  
 ```{r}
-test <- mdb$find()
-
 req <- '[
   {"$unwind" : "$authors"},
   {"$sort" : {"_id" : 1} } 
@@ -56,14 +54,36 @@ test3 <- tibble(
   name = test2$"_id"$name,
   firstname = test2$"_id"$firstname,
   nb = test2$nb
-)
-
-# on initiaise un data frame avec un auteur par ligne
-liste_auteurs <- mdb$distinct(key = "authors") %>% 
-  # on join
-  right_join(y = test3)
+) %>% 
+  mutate("publications" = "title")
 
 ## on recupere pour chacun des 20 auteurs la liste de ses publications 
+liste_publi <- mdb$distinct(key = "_id")
+
+req4 <- '
+{"authors" : {$elemMatch : {name : "Busnel", firstname : "Yann"} } },
+{"title" : true, "_id" : false} '
+
+i <- 1
+while(i <= nrow(test3) ){
+  q <- mdb$find(
+    query = paste0(
+      ' {"authors" : {"$elemMatch" : {"name" : ', pull(test3[i,"name"]), ', 
+                      "firstname" : ', pull(test3[i,"firstname"]),'} } 
+      } ' 
+    ),
+    fields = '{"title" : true, "_id" : false} '
+    )
+  test3[i,"publications"] <- as.vector(q$title)
+  i <- i + 1
+}
+
+test4 <- mdb$find(
+  query = ' {"authors" : {"$elemMatch" : {"name" : "Busnel", "firstname" : "Yann"} } } ',
+  fields = '{"title" : true, "_id" : false} '
+)
+
+
 
 ## on calcule le nombre d'articles commun par paire d'auteurs (en R)
 
