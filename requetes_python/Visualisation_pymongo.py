@@ -85,9 +85,9 @@ for rep in cursor_creneaux:
         if k == 'nb':
             liste_creneau.append(v)
 mediane = statistics.median(liste_creneau)
-print(liste_creneau)
 
-# # #Creation dun dataset pour l'utilisation des cartes Bokeh
+# # # Creation dun dataset pour l'utilisation des cartes Bokeh
+# Creation d'un dictionnnaire nom du centre : creneaux disponibles
 keys_list = liste_nom_ouvert
 values_list = liste_creneau
 zip_iterator = zip(keys_list, values_list)
@@ -100,6 +100,8 @@ for nom in liste_nom:
     else:
         dico_creneau_tot[nom] = 0
 
+# Creation d'une liste des couleurs correspondants aux creneaux disposnibles
+# Rouge si aucun créneau disponible, orange si inférieur à la médiane et vert si supérieur à la médiane
 color = []
 for v in dico_creneau_tot.values():
     if int(v) == 0:
@@ -123,7 +125,7 @@ data = pd.DataFrame(dico)
 output_file("Projet_MongoDB_Python.html")
 
 #Creation de la figure 
-## Nous transformons donc les points GPS:
+# # Nous transformons donc les points GPS:
 k = 6378137
 
 data['Longitude'] = data['Longitude']  * (k * np.pi / 180.0)
@@ -131,7 +133,7 @@ data['Latitude'] = np.log(np.tan((90 + data['Latitude']) * np.pi / 360.0)) * k
 
 data_source = ColumnDataSource(data)
 
-# ## Chargement du fond de carte 
+# # # Chargement du fond de carte 
 tile_provider = get_provider(Vendors.CARTODBPOSITRON)
 
 # # Creation tools
@@ -154,7 +156,7 @@ c = figure(
 # Ajout du fond de carte 
 c.add_tile(tile_provider)
 
-#Ajout point 
+#Ajout des points avec la couleur  adaptee
 
 c.scatter(x='Longitude', y='Latitude', size=12, alpha=0.5, source=data_source,  color = 'Color'
                 )
