@@ -2,6 +2,7 @@
 ### Goutard Amélie - Thivend Evane ###
 
 ### Importation  librairie ###
+from os import kill
 from nbformat import read
 from pymongo import MongoClient
 from sqlalchemy import null
@@ -10,6 +11,8 @@ from bokeh.plotting import figure, output_file, show, ColumnDataSource
 from bokeh.tile_providers import get_provider, Vendors
 import numpy as np
 import datetime
+import statistics
+
 
 
 with open('identifiant.txt') as f:
@@ -53,11 +56,7 @@ for rep in cursor_centre_50:
                 liste_lon.append(v1[0])
                 liste_lat.append(v1[1])
 
-dico = {
-    'Nom': liste_nom,
-    'Longitude' : liste_lon,
-    'Latitude' : liste_lat
-}
+
 
 #Recuperation des creneaux entre le 26 et 29 janvier 2022 inclus 
 filter_geoNear = {'$geoNear': {'near': Rennes,'key' : "location",'distanceField': "distance",'maxDistance': 50000}}
@@ -74,51 +73,82 @@ cursor_moyenne = coll.aggregate([filter_geoNear, filter1_unwind, filter2_unwind,
 for rep in cursor_moyenne:
     moyenne = rep['nb']
 
+#On voit que la moyenne est tres eleve a cause de la valeur egal a 328
+#On décide donc d'utiliser la médiane pour la valeur de seuil
+#L'opérateur médiane n'existe pas dans les opérateurs d'aggregation en mongoDB
+
+
 liste_nom_ouvert = []
-for rep in cursor_creneaux:
-     for k, v in rep.items():
-         if k == 'name':
-             liste_nom_ouvert.append(v)
-         if k == ''
-# #Creation dun dataset pour l'utilisation des cartes Bokeh
-# data = pd.DataFrame(dico)
+liste_creneau = []
+for rep in cursor_creneaux:    
+    for k, v in rep.items():
+        if k == '_id':
+            for v1 in v.values():
+                liste_nom_ouvert.append(v1)
+        if k == 'nb':
+            liste_creneau.append(v)
+mediane = statistics.median(liste_creneau)
+
+# # #Creation dun dataset pour l'utilisation des cartes Bokeh
+dico_creneau = {}
+for nom in liste_nom_ouvert:
+    for creneau in liste_creneau:
+        if nom not in dico_creneau.keys():
+            dico_creneau[nom]= creneau
+
+dico_creneau_tot = {}
+for nom in liste_nom:
+    if nom in dico_creneau.keys():
+        dico_creneau_tot[nom] = dico_creneau[nom]
+    else:
+        dico_creneau_tot[nom] = "Pas de créneau disponible"
+
+dico = {
+    'Nom': liste_nom,
+    'Longitude' : liste_lon,
+    'Latitude' : liste_lat,
+    'Creneau' : dico_creneau_tot.values()
+    
+}
+data = pd.DataFrame(dico)
 
 
-# # Création de l'output HTML
-# output_file("Projet_MongoDB_Python.html")
+# Création de l'output HTML
+output_file("Projet_MongoDB_Python.html")
 
-# #Creation de la figure 
-# ## Nous transformons donc les points GPS:
-# k = 6378137
+#Creation de la figure 
+## Nous transformons donc les points GPS:
+k = 6378137
 
-# data['Longitude'] = data['Longitude']  * (k * np.pi / 180.0)
-# data['Latitude'] = np.log(np.tan((90 + data['Latitude']) * np.pi / 360.0)) * k
+data['Longitude'] = data['Longitude']  * (k * np.pi / 180.0)
+data['Latitude'] = np.log(np.tan((90 + data['Latitude']) * np.pi / 360.0)) * k
 
-# data_source = ColumnDataSource(data)
+data_source = ColumnDataSource(data)
 
-# # ## Chargement du fond de carte 
-# tile_provider = get_provider(Vendors.CARTODBPOSITRON)
+# ## Chargement du fond de carte 
+tile_provider = get_provider(Vendors.CARTODBPOSITRON)
 
-# # # Creation tools
-# tools = "pan,wheel_zoom,box_zoom,reset"
-# TOOLTIPS = [
-#     ('Nom', '@Nom'),
-#     ]
+# # Creation tools
+tools = "pan,wheel_zoom,box_zoom,reset"
+TOOLTIPS = [
+    ('Nom', '@Nom'),
+    ('Créneau','@Creneau')
+    ]
 
-# # Initialisation figure
-# c = figure(
-#            x_axis_type="mercator", y_axis_type="mercator",
-#            title = "Carte des centres de vaccinations autour de Rennes",
-#            tooltips=TOOLTIPS,
-#            tools=tools,
-#            plot_width=900,
-#            plot_height=600
-#            )
+# Initialisation figure
+c = figure(
+           x_axis_type="mercator", y_axis_type="mercator",
+           title = "Carte des centres de vaccinations autour de Rennes",
+           tooltips=TOOLTIPS,
+           tools=tools,
+           plot_width=900,
+           plot_height=600
+           )
 
-# # Ajout du fond de carte 
-# c.add_tile(tile_provider)
+# Ajout du fond de carte 
+c.add_tile(tile_provider)
 
-# #Ajout point 
-# c.scatter(x='Longitude', y='Latitude', size=12, alpha=0.5, source=data_source,  
-#                 )
-# show(c)
+#Ajout point 
+c.scatter(x='Longitude', y='Latitude', size=12, alpha=0.5, source=data_source,  
+                )
+show(c)
