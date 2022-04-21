@@ -39,64 +39,47 @@ req <- '[
 data <- mdb$aggregate(pipeline = req)
 
 
-## on garde uniquement les 20 auteurs qui ont participe a l'ecriture du plus grand nombre d'articles
+## on garde uniquement les 20 auteurs qui ont participe a l'ecriture du plus grand nombre d'articles et pour chaque auteur on recupere la liste de ses publications
 req <- '[
   {"$unwind" : "$authors"},
-  {"$group" : {"_id" : "$authors", "nb": {"$sum" : 1} } },
+  {"$group" : {"_id" : "$authors",
+               "liste_publi" : {"$push" : {"halId" : "$halId"} },
+               "nb": {"$sum" : 1} }
+  },
   {"$sort" : {"nb" : -1} },
   {"$limit" : 20}
 ]'
 
-top20_authors <- mdb$aggregate(pipeline = req)
+data_final = mdb$aggregate(pipeline = req)
 
 # on stocke dans un tibble avec une structure plus claire (une colonne pour name et firstname)
-top20_authors_final <- tibble(
-  name = top20_authors$"_id"$name,
-  firstname = top20_authors$"_id"$firstname,
-  nb = top20_authors$nb
+data_final <- tibble(
+  name = data_final$"_id"$name,
+  firstname = data_final$"_id"$firstname,
+  liste_publi = data_final$liste_publi,
+  nb = data_final$nb
 ) %>% 
-  # on initialise une colonne publications qui pour chaque auteur correspond au vecteurs des articles auquel il a participe
-  mutate(publications = "title")
-
-## on recupere pour chacun des 20 auteurs la liste de ses publications 
-i <- 1
-data_final <- tibble()
-while(i <= nrow(top20_authors_final) ){
-  q <- mdb$find(
-    query = paste0(
-      ' {"authors" : {"$elemMatch" : {"name" : "', pull(top20_authors_final[i,"name"]), '", 
-                      "firstname" : "', pull(top20_authors_final[i,"firstname"]),'"} } 
-      } ' 
-    ),
-    fields = '{"_id" : true} '
-    )
-  transition <- tibble(
-    name = pull(top20_authors_final[i,"name"]),
-    firstname = pull(top20_authors_final[i,"firstname"]),
-    publications = q$"_id"
-  )
-  data_final <- rbind(data_final, transition)
-  i <- i + 1
-}
-
-## on calcule le nombre d'articles commun par paire d'auteurs (en R)
-# on ajoute une colonne qui contient le nom et prenom de chaque auteur
-data_final <- data_final %>% 
-  mutate("nom_prenom" = paste(name, firstname, sep = " "))
-
-# on etablit le tableau de contingence
-mm <- table(data_final$publications, data_final$nom_prenom) %>% 
-  as.data.frame.matrix()
-
-# par paire d'auteur, le nb d'article en commun
+  # on ajoute une colonne qui contient le nom et prenom de chaque auteur
+  mutate("nom_prenom" = paste(name, firstname, sep = " ")) %>% 
+  # on souhaites qu'il y ai autant de lignes par auteur qu'il a participe a des publications
+  select(nom_prenom, liste_publi) %>% 
+  unnest_longer(liste_publi)
 
 
 ```
-Exemple de bonus : Vous pourrez faire en sorte que l’épaisseur des traits joignant les auteurs soit proportionnelle au nombre de publications communes.
+
+
+# Liens entre auteurs (co-publications)
+```{r}
+## on calcule le nombre d'articles commun par paire d'auteurs (en R)
+
+
+```
 
 
 # Visualisation
 ```{r}
 
 ```
+Exemple de bonus : Vous pourrez faire en sorte que l’épaisseur des traits joignant les auteurs soit proportionnelle au nombre de publications communes.
 
