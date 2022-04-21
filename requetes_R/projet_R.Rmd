@@ -65,14 +65,32 @@ data_final <- tibble(
   select(nom_prenom, liste_publi) %>% 
   unnest_longer(liste_publi)
 
-
 ```
 
 
 # Liens entre auteurs (co-publications)
 ```{r}
-## on calcule le nombre d'articles commun par paire d'auteurs (en R)
+## les differentes paires d'auteurs possible
+v <- distinct(data_final, nom_prenom) %>% pull()
+paires_auteurs <- expand.grid("auteur1" = v , "auteur2" = v) %>% 
+  filter(auteur1 != auteur2)
 
+## on veut le nombre de publications en commun entre chaque paire d'auteurs
+crosstable <- table(data_final$liste_publi$halId, data_final$nom_prenom)
+
+test <- apply(paires_auteurs, MARGIN = 1, FUN = function(x){
+  i = 1
+  vec = c()
+  while(i <= nrow(crosstable)){
+    vec = c(vec, sum(crosstable[i,c(x[1],x[2])][1] == 1 & crosstable[i,c(x[1],x[2])][2] == 1))
+    i = i +1
+  }
+  x[3] = sum(vec)
+})
+
+paires_auteurs$nb_publi_commun = test
+
+# on a les paires d'auteurs "aller-retour", on peut les supprimer, a voir si besoin pour la visualisation
 
 ```
 
