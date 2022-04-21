@@ -1,0 +1,223 @@
+---
+title: "projet"
+author: "Amélie GOUTARD"
+date: '2022-04-07'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Importation des librairies
+```{r}
+lib <- c("tidyverse", "lubridate", "forecast", "plyr", "plotly")
+sapply(lib, require, character = TRUE)
+```
+
+# Importation et traitements des données 
+Source des données : https://www.insee.fr/fr/statistiques/series/102765746
+```{r}
+## on importe
+caracteristiques <- read_delim("caractéristiques.csv", delim =";")
+v_mensuelles <- read_delim("valeurs_mensuelles.csv", delim =",")
+head(caracteristiques)
+head(v_mensuelles)
+
+## on garde uniquement les colonnes utiles
+vm_depenses <- v_mensuelles %>% 
+  select("Libellé","Situation mensuelle du budget de l'État - Dépenses - Cumul depuis le début de l'année" )
+
+colnames(vm_depenses) <- c("date", "depenses")
+
+## on veut la colonne date au format date
+vm_depenses$date <- ym(vm_depenses$date)
+
+## si on ne veut pas cumule
+for (j in 1:13){
+  for (i in 2:12){
+     vm_depenses[i+((j-1)*12), 2] <- vm_depenses[i+((j-1)*12), 2] - sum(vm_depenses[(1+((j-1)*12)):((i-1)+ ((j-1)*12)), 2])
+   }
+}
+
+```
+Nous avons décidé d'utiliser les dépenses non cumulées. Leur unité est exprimée en million d'euros.
+
+
+# Etude du modèle global  
+
+## Série brute  
+```{r}
+## month.plot 
+ts = ts(vm_depenses$depenses, frequency=12)
+forecast::ggmonthplot(ts)
+
+## on represente la serie brute
+ts %>% 
+  ggtsdisplay(
+    plot.type = "scatter"
+  )
+
+## lagplot
+forecast::gglagplot(ts, lags = 12, do.lines = FALSE)
+```
+*Interprétation monthplot* : Le monthplot montre qu'il semble exister une saisonalité et une tendance. En effet, d'une année sur l'autre, les dépenses se suivent plus ou moins de cette façon :
+- janvier février mai juin (voir décembre) : moyenne entre 30000 et 35000 million d'euro
+- mars août septembre novembre : moyenne entre 25000 et 28000 million d'euro
+- juillet octobre et avril bcp de dépenses (particulièrement bien au-dessus des autres mois pour avril)
+On remarque globalement une tendance à la hausse au fil des années.  
+
+*Interprétation ACF* : En regardant les auto-corrélations, on remarque des pics fortement positifs (et d'autres négatifs) ainsi qu'un schéma périodique de période 12.  
+
+*Iinterprétation lagplot* : l'axe y montre les valeurs décalées de la série chronologique. Chaque graphique montre Yt tracé en fonction de Yt_k pour différentes valeurs de k. 
+On voit que la relation est fortement positive au décalage 12, ce qui reflète la forte saisonnalité des données.   
+
+
+### Tendance
+```{r}
+### tendance ?
+## degre 1 : semble bien
+ts %>% 
+  diff(
+    differences = 1
+  ) %>% 
+  ggtsdisplay(
+    plot.type = "scatter"
+  )
+# moyenne
+mean(ts %>% 
+  diff( differences = 1) 
+) # 84.95513
+
+## degre 2
+ts %>% 
+  diff(
+    differences = 2
+  ) %>% 
+  ggtsdisplay(
+    plot.type = "scatter"
+  )
+# moyenne
+mean(ts %>% 
+  diff( differences = 2) 
+) # -174.1355
+
+## on enleve la tendance (diff de 1)
+serie_wo_tendance <- diff(ts, differences=1)
+
+```
+Le degré 1 semble avoir bien supprimé la tendance : plus de croissance et la moyenne est proche de 0 (84.95513). 
+
+
+### Saisonnalité
+```{r}
+### saisonnalite ?
+serie_wo_tendance %>% 
+  diff(lag=12) %>% 
+  ggtsdisplay(
+    plot.type = "scatter"
+  )
+
+serie_wo_tendance %>% 
+  diff(lag=12) %>% 
+  ggtsdisplay()
+
+## serie sans tendance ni saisonnalite 
+serie_wo_ts <- diff(serie_wo_tendance, lag=12)
+
+### stationarite ?
+# oui car bruit blanc
+
+```
+On remarque graphiquement, avec l'ACF, que nous sommes en présence d'un bruit blanc. En effet, 95% des pics de l'ACF se situent entre les pointillés bleus (± 2 / sqrt(T), avec T longueur de la série). Nous savons que tout bruit blanc est stationnaire, donc la série est stationnaire. 
+
+esperance constante ? oui
+voir la variance pour la stationnarité
+estimer un ar
+estimer un ma
+on oppose et on choisit
+regression lineaire generalise pour estimer ar et ma
+
+
+### Estimation par MCO
+```{r}
+## estimation par MCO
+t <- 1:length(ts)
+x <- outer(t,1:6)*(pi/6)
+df <- data.frame(ts, t, cos(x), sin(x[,-6]))
+ts_lm <- lm(data = df, ts ~ .)
+
+dates <- time(ts)
+p1 <- ggplot() +
+  geom_line(aes(x = dates, y = ts), color = "dodgerblue4") +
+  geom_line(aes(x = dates, y = ts_lm$fitted), color = "red")
+p1
+
+## etude des residus
+ggtsdisplay(ts_lm$residuals, plot.type = "scatter")
+ggtsdisplay(ts_lm$residuals)
+
+```
+Pas de corrélation.  
+L'étude des résidus ne nous aide pas forcément à choisir un AR ou MA... Nous allons tester les 2. 
+
+
+### AR
+```{r}
+## AR
+ts_ar <- ar(ts_lm$residuals, order.max = 12)
+
+# pas les memes resultats
+
+## Test de blancheur
+Box.test(ts_ar$resid, lag=12, type="Ljung-Box") # bruit blanc donc stationnarite
+# on test pour h aussi grand que la saisonnalite
+
+```
+*Test de blancheur* : On teste l'hypothèse nulle H0 tous les coefficients sont nuls contre H1 au moins un des coefficients est non nul. On souhaite être sous H0 pour être en situation de bruit blanc. Le test de Ljung-Box donne une p-value = 0.8577. Cette p-value étant supérieure à 5%, on ne rejette pas H0, nous somme en situation de bruit blanc. 
+
+
+### MA
+```{r}
+ts_ma <- Arima(y = ts_lm$residuals, order = c(0,0,1)) # MA(1)
+
+## Test de blancheur
+Box.test(ts_ma$resid, lag=12, type="Ljung-Box") # pas de bruit blanc
+# on test pour h aussi grand que la saisonnalite
+
+```
+P-value du test de blancheur inférieure à 5%, on est pas en présence d'un bruit blanc. 
+
+### ARIMA
+```{r}
+auto.arima(ts_lm$residuals, trace=TRUE)
+# l'algo suggere pour la partie non saisonniere du modele p = 2, d = 1 et q = 4. Il ne suggere pas de partie saisonniere. 
+
+ts_arima <- Arima(y = ts_lm$residuals, order = c(2,1,4), method = "ML") 
+
+## Test de blancheur
+Box.test(ts_arima$resid, lag=12, type="Ljung-Box") # pas de bruit blanc
+# on test pour h aussi grand que la saisonnalite
+
+```
+P-value du test de blancheur inférieure à 5% donc on rejette H0 : on n'est pas en présence d'un bruit blanc. 
+
+Etapes à effectuer:
+  - Stat desc
+  - Première ACF
+  - Opérateur différence : détecter tendance et saisonnalité 
+  - Suppression pour arriver à series stationnaires
+  - Reg lin 
+  - Etudes des résidus
+  - ACF + PACF pour déterminer ordre des processus
+
+## Prévisions  
+
+Nous ne disposons des données uniquement jusqu'à janvier 2022. Mais depuis la récupération de nos données, l'insee a publié les résultats pour le mois de février 2022 :
+- janvier 2022 : 35 417
+- février 2022 : 68 731
+--> donc une prévision proche de 33 314 serait bonne
+```{r}
+
+```
+
