@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Librairies
 ```{r}
-lib <- c("tidyverse", "mongolite", "rlist")
+lib <- c("tidyverse", "mongolite", "rlist", "visNetwork")
 sapply(lib, require, character = TRUE)
 
 ```
@@ -50,26 +50,28 @@ req <- '[
   {"$limit" : 20}
 ]'
 
-data_final = mdb$aggregate(pipeline = req)
+data = mdb$aggregate(pipeline = req)
 
 # on stocke dans un tibble avec une structure plus claire (une colonne pour name et firstname)
-data_final <- tibble(
-  name = data_final$"_id"$name,
-  firstname = data_final$"_id"$firstname,
-  liste_publi = data_final$liste_publi,
-  nb = data_final$nb
-) %>% 
+data <- tibble(
+  name = data$"_id"$name,
+  firstname = data$"_id"$firstname,
+  liste_publi = data$liste_publi,
+  nb = data$nb
+) %>%
   # on ajoute une colonne qui contient le nom et prenom de chaque auteur
-  mutate("nom_prenom" = paste(name, firstname, sep = " ")) %>% 
-  # on souhaites qu'il y ai autant de lignes par auteur qu'il a participe a des publications
-  select(nom_prenom, liste_publi) %>% 
-  unnest_longer(liste_publi)
+  mutate("nom_prenom" = paste(name, firstname, sep = " ")) 
 
 ```
 
 
 # Liens entre auteurs (co-publications)
 ```{r}
+data_final <- data %>%
+  # on souhaites qu'il y ai autant de lignes par auteur qu'il a participe a des publications
+  select(nom_prenom, liste_publi) %>%
+  unnest_longer(liste_publi)
+
 ## les differentes paires d'auteurs possible
 v <- distinct(data_final, nom_prenom) %>% pull()
 paires_auteurs <- expand.grid("auteur1" = v , "auteur2" = v) %>% 
@@ -78,7 +80,7 @@ paires_auteurs <- expand.grid("auteur1" = v , "auteur2" = v) %>%
 ## on veut le nombre de publications en commun entre chaque paire d'auteurs
 crosstable <- table(data_final$liste_publi$halId, data_final$nom_prenom)
 
-test <- apply(paires_auteurs, MARGIN = 1, FUN = function(x){
+paires_auteurs$nb_publi_commun <- apply(paires_auteurs, MARGIN = 1, FUN = function(x){
   i = 1
   vec = c()
   while(i <= nrow(crosstable)){
@@ -88,16 +90,42 @@ test <- apply(paires_auteurs, MARGIN = 1, FUN = function(x){
   x[3] = sum(vec)
 })
 
-paires_auteurs$nb_publi_commun = test
-
 # on a les paires d'auteurs "aller-retour", on peut les supprimer, a voir si besoin pour la visualisation
 
-```
+# for(link1 in paires_auteurs){
+#   for(link2 in paires_auteurs){
+#     if (link1 != link2){
+#       tibble %>% add_row(link1)
+#     }
+#   }
+# }
 
+```
 
 # Visualisation
 ```{r}
+## noeuds 
+nodes <- data %>% 
+  select(nom_prenom, nb) %>% 
+  # ajout d'un groupe pour chaque auteur en fonction du nombre de publications
+  mutate(group = ifelse(nb>12,"High", ifelse(nb>10, "Medium", "Low"))) %>% 
+  select(-nb) %>% 
+  dplyr::rename(id = nom_prenom) %>% 
+  mutate("title" = id)
 
+## liens
+edges <- paires_auteurs %>% 
+  filter(nb_publi_commun != 0) %>% 
+  dplyr::rename(from = auteur1, to = auteur2, weight = nb_publi_commun) %>% 
+  mutate(value = weight)
+
+## representation graphique
+visNetwork(nodes, edges) %>% 
+  visInteraction(dragView = TRUE,navigationButtons = TRUE) %>%
+  visPhysics(solver = "forceAtlas2Based", 
+             forceAtlas2Based = list(gravitationalConstant = -60)) %>%
+  visLayout(randomSeed = 12) %>% 
+  # choix du groupe 
+  visOptions(selectedBy = "group", highlightNearest = list(enabled = T, degree = 1, hover = T))
 ```
 Exemple de bonus : Vous pourrez faire en sorte que l’épaisseur des traits joignant les auteurs soit proportionnelle au nombre de publications communes.
-
