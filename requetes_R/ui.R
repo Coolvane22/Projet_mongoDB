@@ -1,9 +1,9 @@
-#### LIBRAIRIES
-library(shiny)
-library(bs4Dash)
-library(tidyverse)
-library(shinyjs)
-library(visNetwork)
+# #### LIBRAIRIES
+# library(shiny)
+# library(bs4Dash)
+# library(tidyverse)
+# library(shinyjs)
+# library(visNetwork)
 
 #### CONTENU DES PAGES
 publication <- fluidRow(
@@ -33,7 +33,8 @@ food <- fluidRow(
     selectizeInput(
       'choix_type_cuisine', 
       'Choix du type de cuisine :',
-      choices = unique(data$id$cuisine)
+      # choices = unique(data$id$cuisine)
+      choices = c("1","2")
     )
   ),
   tabsetPanel(

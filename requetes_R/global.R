@@ -1,6 +1,7 @@
 ################################################################################
 #### librairies
-lib <- c("shiny","shinyWidgets","tidyverse", "mongolite", "rlist", "visNetwork", "plotly")
+lib <- c("shiny", "bs4Dash","shinyWidgets","tidyverse", "mongolite", "rlist", 
+         "visNetwork", "plotly", "shinyjs", "jsonlite")
 sapply(lib, require, character = TRUE)
 
 
@@ -94,7 +95,7 @@ req31 <- '[
     {"$sort" : {"nb" : -1}}
 ]'
 
-food <- mdb_food$aggregate(pipeline = req)
+food <- mdb_food$aggregate(pipeline = req31)
 food <- food %>% dplyr::rename("id" = "_id")
 
 ### requete du deuxieme graphique
