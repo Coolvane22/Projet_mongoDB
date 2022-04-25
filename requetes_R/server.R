@@ -20,13 +20,13 @@ shinyServer(function(input, output) {
   })
   
   ### graphique proportion d'un type de restaurant par quartier
-  # output$plot_type <- renderPlotly({
-  #   type <- food %>% 
-  #     filter(id$cuisine == input$choix_type_cuisine)
-  #   
-  #   plot_ly(type, labels = ~id$quartier, values = ~nb, type = 'pie') %>%
-  #     layout(title = "Distribution par quartier" )
-  # })
+  output$plot_type <- renderPlotly({
+    type <- food %>%
+      filter(id$cuisine == input$choix_type_cuisine)
+
+    plot_ly(type, labels = ~id$quartier, values = ~nb, type = 'pie') %>%
+      layout(title = "Distribution par quartier" )
+  })
   
   ### graphique 2
   

@@ -33,8 +33,7 @@ food <- fluidRow(
     selectizeInput(
       'choix_type_cuisine', 
       'Choix du type de cuisine :',
-      # choices = unique(data$id$cuisine)
-      choices = c("1","2")
+      choices = unique(food$id$cuisine)
     )
   ),
   tabsetPanel(
