@@ -95,7 +95,35 @@ req31 <- '[
     {"$sort" : {"nb" : -1}}
 ]'
 
-food <- mdb_food$aggregate(pipeline = req31)
-food <- food %>% dplyr::rename("id" = "_id")
+food <- mdb_food$aggregate(pipeline = req31) %>% 
+  dplyr::rename("id" = "_id")
 
 ### requete du deuxieme graphique
+# {$month: "$grades.date"}
+# 'lubridate::month('   ')'
+req32 <- '[
+  {"$unwind": "$grades"},
+  {"$match": {"grades.grade": {"$ne": "Not Yet Graded"}}},
+  {"$match": {"borough": {"$ne": "Missing"}}},
+  {"$group":{
+     "_id": {
+            "month" : {"$month": "$grades.date"},
+            "name" : "$name",
+            "borough" : "$borough"
+     },
+     "nb": {"$sum":1}
+    }
+  },
+  {"$group":{
+    "_id": {
+          "month" : "$_id.month",
+          "borough" : "$_id.borough"
+    },
+    "nb_max" : {"$max" : "$nb"}
+    }
+  },
+  {"$sort": {"_id.month":1,"_id.borough":1}}       
+]'
+
+food2 <- mdb_food$aggregate(pipeline = req32) %>% 
+  dplyr::rename("id" = "_id")

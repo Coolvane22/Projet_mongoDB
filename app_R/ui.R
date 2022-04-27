@@ -32,13 +32,20 @@ publication <- fluidRow(
   
 food <- fluidRow(
   box(
-    title ="NYfood", 
+    title ="Food", 
     status = "info", 
     solidHeader = TRUE, 
     width = 12,
     collapsible = TRUE, 
     align="justify",
-    "Bla bla"
+    "La base de données 'food' contient des informations sur les restaurants des différents
+    quartiers de New-York, comme la localisation du restaurant, le type de cuisine, 
+    ou encore des notes attribuées par des clients, sur plusieurs années.", br(),
+    "Nous avons dans un premier temps représenté avec un pie-chart la distribution du type
+    de restaurant par quartier. Vous pouvez choisir le type de restaurant que vous souhaitez représenter.", br(),
+    "Dans un second temps, nous voulions savoir si le nombre maximal de notes obtenus sur la période étudiée
+    varie en fonction des mois. Pour ce faire, nous avons généré une diagramme en barre du nombre maximal
+    de notes par quartier pour un mois choisit. Vous pouvez sélectionner le mois que vous souhaitez afficher."
   ),
   tabBox(
     width = 12,
@@ -57,8 +64,13 @@ food <- fluidRow(
       plotlyOutput("plot_type")
     ),
     tabPanel(
-      tagList(icon("chart-pie"), "  Graph 2"),
-      "bla bla"
+      tagList(icon("chart-area"), "  Graph 2"),
+      selectizeInput(
+        'choix_mois', 
+        'Choix du mois :',
+        choices = unique(food2$id$month)
+      ),
+      plotlyOutput("plot_mois")
     )
   )
 )
@@ -83,7 +95,7 @@ ui <- dashboardPage(
         "Base publications", tabName = "publi", icon = icon("book", lib="font-awesome")
       ),
       menuItem(
-        "Base NYfood",tabName = "nyfood", icon = icon("fas fa-utensils", lib="font-awesome")
+        "Base food",tabName = "nyfood", icon = icon("fas fa-utensils", lib="font-awesome")
       ),
       menuItem(
         "Page présentation",tabName = "nyfood", icon = icon("home", lib="font-awesome")

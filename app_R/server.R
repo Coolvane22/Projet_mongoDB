@@ -17,11 +17,22 @@ shinyServer(function(input, output) {
     type <- food %>%
       filter(id$cuisine == input$choix_type_cuisine)
 
-    plot_ly(type, labels = ~id$quartier, values = ~nb, type = 'pie') %>%
-      layout(title = "Distribution par quartier" )
+    plot_ly(type, labels = ~id$quartier, values = ~nb, type = 'pie',
+            marker = list(colors = c("#EC8C74", "#E76F51", "#F4A261", "#E9C46A", "#2A9D8F"),
+                          line = list(color = '#FFFFFF', width = 1))) %>%
+      layout(title = "Distribution du type de restaurant par quartier" )
   })
   
-  ### graphique 2
+  ### graphique nombre maximal de notes d'un mois par quartier
+  output$plot_mois <- renderPlotly({
+    mois <- food2 %>%
+      filter(id$month == as.integer(input$choix_mois))
+
+    plot_ly(mois, x = ~id$borough, y = ~nb_max, type = 'bar', color=~id$borough) %>%
+      layout(title = "Nombre maximum de notes en fonction du quartier pour le mois choisi",
+             xaxis = list(title="Quartiers"), 
+             yaxis = list(title="Nombre maximum de notes"))
+  })
   
 })
 
