@@ -42,7 +42,9 @@ food <- fluidRow(
     quartiers de New-York, comme la localisation du restaurant, le type de cuisine, 
     ou encore des notes attribuées par des clients, sur plusieurs années.", br(),
     "Nous avons dans un premier temps représenté avec un pie-chart la distribution du type
-    de restaurant par quartier. Vous pouvez choisir le type de restaurant que vous souhaitez représenter.", br(),
+    de cuisine par quartier. Etant donné le grand nombre de type de cuisine, nous avons 
+    choisit de garder uniquement les types de cuisine qui comportent plus de 150 restaurants.", br(),
+    "Vous pouvez choisir le type que vous souhaitez représenter.", br(),
     "Dans un second temps, nous voulions savoir si le nombre maximal de notes obtenus sur la période étudiée
     varie en fonction des mois. Pour ce faire, nous avons généré une diagramme en barre du nombre maximal
     de notes par quartier pour un mois choisit. Vous pouvez sélectionner le mois que vous souhaitez afficher."

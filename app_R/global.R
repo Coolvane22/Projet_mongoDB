@@ -91,7 +91,8 @@ mdb_food = mongo(
 req31 <- '[
 {"$group": {"_id" : {"cuisine" : "$cuisine", "quartier" :  "$borough"},
                 "nb" : {"$sum" : 1}}
-    },
+},
+    {"$match": {"nb": {"$gt": 150}}},
     {"$sort" : {"nb" : -1}}
 ]'
 
