@@ -38,7 +38,6 @@ publi <- tibble(
   # on ajoute une colonne qui contient le nom et prenom de chaque auteur
   mutate("nom_prenom" = paste(name, firstname, sep = " ")) 
 
-
 ### liens entre auteurs (co-publications)
 publi_final <- publi %>%
   # on souhaites qu'il y ai autant de lignes par auteur qu'il a participe a des publications
@@ -100,8 +99,6 @@ food <- mdb_food$aggregate(pipeline = req31) %>%
   dplyr::rename("id" = "_id")
 
 ### requete du deuxieme graphique
-# {$month: "$grades.date"}
-# 'lubridate::month('   ')'
 req32 <- '[
   {"$unwind": "$grades"},
   {"$match": {"grades.grade": {"$ne": "Not Yet Graded"}}},

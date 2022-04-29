@@ -1,3 +1,14 @@
+library("shiny")
+library("bs4Dash")
+library("shinyWidgets")
+library("tidyverse")
+library("mongolite")
+library("rlist")
+library("visNetwork")
+library("plotly")
+library("shinyjs")
+library("jsonlite")
+
 #### SERVER
 shinyServer(function(input, output) {
   
@@ -20,7 +31,7 @@ shinyServer(function(input, output) {
     plot_ly(type, labels = ~id$quartier, values = ~nb, type = 'pie',
             marker = list(colors = c("#EC8C74", "#E76F51", "#F4A261", "#E9C46A", "#2A9D8F"),
                           line = list(color = '#FFFFFF', width = 1))) %>%
-      layout(title = "Distribution du type de restaurant par quartier" )
+      layout(title = "Distribution du type de restaurant par arrondissement" )
   })
   
   ### graphique nombre maximal de notes d'un mois par quartier
@@ -29,8 +40,8 @@ shinyServer(function(input, output) {
       filter(id$month == as.integer(input$choix_mois))
 
     plot_ly(mois, x = ~id$borough, y = ~nb_max, type = 'bar', color=~id$borough) %>%
-      layout(title = "Nombre maximum de notes en fonction du quartier pour le mois choisi",
-             xaxis = list(title="Quartiers"), 
+      layout(title = "Nombre maximum de notes en fonction de l'arrondissement pour le mois choisi",
+             xaxis = list(title="Arrondissements"), 
              yaxis = list(title="Nombre maximum de notes"))
   })
   

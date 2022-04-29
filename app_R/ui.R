@@ -1,3 +1,14 @@
+library("shiny")
+library("bs4Dash")
+library("shinyWidgets")
+library("tidyverse")
+library("mongolite")
+library("rlist")
+library("visNetwork")
+library("plotly")
+library("shinyjs")
+library("jsonlite")
+
 #### CONTENU DES PAGES
 publication <- fluidRow(
     box(
@@ -39,15 +50,15 @@ food <- fluidRow(
     collapsible = TRUE, 
     align="justify",
     "La base de données 'food' contient des informations sur les restaurants des différents
-    quartiers de New-York, comme la localisation du restaurant, le type de cuisine, 
+    arrondissements de New-York, comme la localisation du restaurant, le type de cuisine, 
     ou encore des notes attribuées par des clients, sur plusieurs années.", br(),
     "Nous avons dans un premier temps représenté avec un pie-chart la distribution du type
-    de cuisine par quartier. Etant donné le grand nombre de type de cuisine, nous avons 
+    de cuisine par arrondissement. Etant donné le grand nombre de type de cuisine, nous avons 
     choisit de garder uniquement les types de cuisine qui comportent plus de 150 restaurants.", br(),
     "Vous pouvez choisir le type que vous souhaitez représenter.", br(),
     "Dans un second temps, nous voulions savoir si le nombre maximal de notes obtenus sur la période étudiée
     varie en fonction des mois. Pour ce faire, nous avons généré une diagramme en barre du nombre maximal
-    de notes par quartier pour un mois choisit. Vous pouvez sélectionner le mois que vous souhaitez afficher."
+    de notes par arrondissement pour un mois choisit. Vous pouvez sélectionner le mois que vous souhaitez afficher."
   ),
   tabBox(
     width = 12,
@@ -100,7 +111,8 @@ ui <- dashboardPage(
         "Base food",tabName = "nyfood", icon = icon("fas fa-utensils", lib="font-awesome")
       ),
       menuItem(
-        "Page présentation",tabName = "nyfood", icon = icon("home", lib="font-awesome")
+        "Page présentation", icon = icon("home", lib="font-awesome"), 
+        href="https://coolvane22.github.io/Projet_mongoDB/"
       )
     )
   ),
@@ -128,7 +140,7 @@ ui <- dashboardPage(
   
   ## pied de page
   dashboardFooter(
-    left = "Amélie GOUTARD, Evane Thivend",
+    left = "Amélie GOUTARD, Evane THIVEND",
     right = "2022"
   ),
   
@@ -136,42 +148,3 @@ ui <- dashboardPage(
   title = "MongoDB"
 )
 
-
-
-# # Define UI for application that draws a histogram
-# shinyUI(fluidPage(
-# 
-#   # Application title
-#   titlePanel("Visualisation MongoDB"),
-# 
-#   tabPanel("Visualisation Publications",
-#            fluidRow(
-#              sidebarLayout(
-#                sidebarPanel(
-# 
-#                ),
-#                mainPanel(
-#                  tabsetPanel(
-# 
-#                  )
-#                )
-#              )),
-#            tabPanel("Visualisation NYfood",
-#                     fluidRow(
-#                       sidebarLayout(
-#                         sidebarPanel(
-# 
-#                           selectizeInput('choix_type_cuisine', 'Choix du type de cuisine :',choices=unique(data$id$cuisine)),
-# 
-#                         ),
-#                         mainPanel(
-#                           tabsetPanel(
-# 
-#                             tabPanel("Nombres de restaus de ce type dans chaque quartier", plotlyOutput("plot_type")),
-#                             tabPanel("2eme graphe", plotlyOutput("plot_2")),
-# 
-#                           )
-#                         )
-#                       )),
-#            ))
-# ))
