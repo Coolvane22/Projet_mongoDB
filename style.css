@@ -12,13 +12,20 @@ body{
   font-size:18px;
   line-height:1.5;
   color:#fff;
-  background:#06f;
+  background:#048CC8;
 }
 
 .header,
 .footer{
   background:#fff;
-  color:#06f;
+  color:#048CC8;
+  position: -webkit-sticky;
+	position: sticky;
+}
+
+.header{
+	top:0; /* pour que l'header reste toujours visible quand on defile la page */
+	z-index:100;
 }
 
 .nav,
@@ -49,7 +56,7 @@ body{
 .flex-item.home{
   margin:0 auto 0 0;
   font-size:1em;
-  border-bottom:5px solid #06f;
+  border-bottom:5px solid #048CC8;
 }
 
 .flex-item.home a{
@@ -57,14 +64,14 @@ body{
 }
 
 a{
-  color:#06f;
+  color:#048CC8;
   text-decoration:none;
   display:block;
   border-bottom:5px solid #fff;
 }
 
 a:hover{
-  border-bottom:5px solid #06f;
+  border-bottom:5px solid #048CC8;
   transition:border-color 400ms ease-out;
 }
 
