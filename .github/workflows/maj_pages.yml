@@ -27,4 +27,8 @@ jobs:
         
       - name: GitHub Pages
         uses: crazy-max/ghaction-github-pages@v2.6.0
+        with:
+           # Build directory to deploy
+         build_dir: true
+    # Whether to treat build_dir as an absolute path
  
